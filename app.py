@@ -458,7 +458,7 @@ def main():
             left: 0;
             width: 0;
             height: 100%;
-            background-color: rgb(106, 156, 137, 0.5);
+            background-color: rgb(19,38,53,0.5);
             transition: width 0.5s ease;
             z-index: 0;
         }
@@ -488,6 +488,7 @@ def main():
             border-radius: 5px;
             border: 1px solid #ddd;
             margin-top: 20px;
+            margin-bottom:20px;
             color: #fff;
             transition: background-color 0.5s ease, color 0.5s ease, font-size 0.5s ease;
             overflow: hidden;

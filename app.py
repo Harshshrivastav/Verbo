@@ -392,6 +392,8 @@
 
 # V-3
 import streamlit as st
+from sqlite3 import Error
+
 from auth import (
     create_connection, create_usertable, delete_user_account, login_user, add_userdata, user_exists, 
     make_hashes, check_hashes, validate_password
@@ -411,11 +413,26 @@ if 'chat_history' not in st.session_state:
 # Function to load chat history from the database
 def load_chat_history():
     connection = create_connection()
-    if connection is not None:
+    if connection is None:
+        return
+    
+    try:
         cursor = connection.cursor()
-        cursor.execute("SELECT message FROM chat_history WHERE username = %s ORDER BY timestamp ASC", (st.session_state.username,))
-        st.session_state.chat_history = [chat[0] for chat in cursor.fetchall()]
-        connection.close()
+        
+        # Ensure that `username` is properly assigned and not None or empty
+        if 'username' in st.session_state and st.session_state.username:
+            cursor.execute("SELECT message FROM chat_history WHERE username = ? ORDER BY timestamp ASC", (st.session_state.username,))
+            chats = cursor.fetchall()
+            return [chat[0] for chat in chats]  # Return a list of messages
+        else:
+            return []
+    
+    except Error as e:
+        print(f"Error while fetching chat history: {e}")
+        return []
+    finally:
+        if connection:
+            connection.close()
 
 def main():
     # Home page styling and structure

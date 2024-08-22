@@ -1,7 +1,7 @@
-import mysql.connector
-from mysql.connector import Error
+import sqlite3
+from sqlite3 import Error
 
-# Function to get user chat history from the MySQL database
+# Function to get user chat history from the SQLite database
 def get_user_chat_history(username):
     connection = create_connection()
     if connection is None:
@@ -11,8 +11,8 @@ def get_user_chat_history(username):
         create_chat_table(connection)  # Ensure the chat table exists
         cursor = connection.cursor()
 
-        # Use parameterized query to prevent SQL injection
-        cursor.execute("SELECT message FROM chat_history WHERE username = %s ORDER BY timestamp ASC", (username,))
+        # Use parameterized query with SQLite placeholder `?`
+        cursor.execute("SELECT message FROM chat_history WHERE username = ? ORDER BY timestamp ASC", (username,))
         chats = cursor.fetchall()
         return [chat[0] for chat in chats]  # Return a list of messages
 
@@ -20,10 +20,10 @@ def get_user_chat_history(username):
         print(f"Error while fetching chat history: {e}")
         return []
     finally:
-        if connection.is_connected():
+        if connection:
             connection.close()
 
-# Function to add a new chat message to the MySQL database
+# Function to add a new chat message to the SQLite database
 def add_to_chat_history(username, message):
     connection = create_connection()
     if connection is None:
@@ -33,14 +33,14 @@ def add_to_chat_history(username, message):
         create_chat_table(connection)  # Ensure the chat table exists
         cursor = connection.cursor()
 
-        # Use parameterized query to prevent SQL injection
-        cursor.execute("INSERT INTO chat_history (username, message) VALUES (%s, %s)", (username, message))
+        # Use parameterized query with SQLite placeholder `?`
+        cursor.execute("INSERT INTO chat_history (username, message) VALUES (?, ?)", (username, message))
         connection.commit()
 
     except Error as e:
         print(f"Error while inserting chat message: {e}")
     finally:
-        if connection.is_connected():
+        if connection:
             connection.close()
 
 # Function to create the chat history table if it does not exist
@@ -49,27 +49,21 @@ def create_chat_table(connection):
         cursor = connection.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS chat_history (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
                 message TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
         connection.commit()
     except Error as e:
         print(f"Error while creating chat table: {e}")
 
-# Function to create a connection to the MySQL database
+# Function to create a connection to the SQLite database
 def create_connection():
     try:
-        connection = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='Shriv@st@v@096',
-            database='eventdb'
-        )
-        if connection.is_connected():
-            return connection
+        connection = sqlite3.connect('eventdb.sqlite')  # SQLite database file
+        return connection
     except Error as e:
-        print(f"Error while connecting to MySQL: {e}")
+        print(f"Error while connecting to SQLite: {e}")
         return None

@@ -32,3 +32,4 @@ numexpr
 huggingface_hub
 tf_keras
 PyPDF2
+langserve

@@ -572,7 +572,7 @@ def get_groq_response(input_text, language):
         "config": {},
         "kwargs": {}
     }
-    response = requests.post("http://127.0.0.1:8000/chain/invoke", json=json_body)
+    response = requests.post("https://verbo-if1h.onrender.com:8000/chain/invoke", json=json_body)
     try:
         response_data = response.json()
         output_message = response_data.get("output", "No result field in response")

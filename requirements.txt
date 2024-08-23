@@ -36,4 +36,4 @@ langserve
 gtts
 sse_starlette
 pydantic==1.10.13
-streamlit-q
+streamlit-quill

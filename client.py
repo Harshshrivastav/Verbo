@@ -505,14 +505,170 @@
 import streamlit as st
 import requests
 import PyPDF2
+import fitz  # PyMuPDF
 from gtts import gTTS
 import io
 import base64
 from bs4 import BeautifulSoup
+from streamlit_quill import st_quill
 
+# Function to display PDF as images
+def render_pdf_to_html(uploaded_file):
+    import fitz  # PyMuPDF
+
+    pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    html_content = ""
+    list_open = False  # Track if a list is currently open (ul or ol)
+
+    for page_num in range(len(pdf_document)):
+        page = pdf_document.load_page(page_num)
+        blocks = page.get_text("dict")["blocks"]
+
+        # Go through each block to build the HTML structure
+        for block in blocks:
+            if "lines" in block:
+                # Determine alignment based on the block position
+                block_bbox = block['bbox']
+                block_x0 = block_bbox[0]  # Left coordinate
+                block_x1 = block_bbox[2]  # Right coordinate
+                page_width = page.rect.width
+
+                # Infer alignment from the block's x-coordinates
+                alignment = "left"
+                if block_x0 < 50 and block_x1 > (page_width - 50):
+                    alignment = "justify"
+                elif block_x0 > (page_width / 2):
+                    alignment = "right"
+                elif abs(block_x0 - (page_width / 2)) < 50:
+                    alignment = "center"
+
+                # Add the div with alignment styling
+                html_content += f"<div style='text-align: {alignment}; margin-bottom:10px;'>"
+
+                current_list_type = None  # Track if it's an ordered or unordered list
+
+                for line in block["lines"]:
+                    line_text = "".join([span["text"] for span in line["spans"]]).strip()
+
+                    # Detect if the line is part of a list
+                    if line_text.startswith("- ") or line_text.startswith("• "):  # Unordered list
+                        if not list_open:  # Open the list if it's not already open
+                            current_list_type = "ul"
+                            html_content += "<ul>"
+                            list_open = True
+                        html_content += "<li>"
+                    elif len(line_text) > 1 and line_text[0].isdigit() and line_text[1] in ('.', ')'):  # Ordered list
+                        if not list_open:
+                            current_list_type = "ol"
+                            html_content += "<ol>"
+                            list_open = True
+                        html_content += "<li>"
+                    else:
+                        if list_open:  # Close any open list if the current line is not part of a list
+                            html_content += f"</{current_list_type}>"
+                            list_open = False
+                        html_content += "<br>"
+
+                    # Process each span for formatting (bold, italic, underline)
+                    for span in line["spans"]:
+                        span_content = span["text"]
+                        font_name = span["font"]  # Get the font name
+
+                        # Apply formatting tags: <b>, <i>, <u>
+                        if "Bold" in font_name:  # Check if the font indicates bold
+                            span_content = f"<b>{span_content}</b>"
+
+                        if "Italic" in font_name or "Oblique" in font_name:  # Check if the font indicates italic
+                            span_content = f"<i>{span_content}</i>"
+
+                        if span["flags"] & 4:  # Check if the underline flag is set
+                            span_content = f"<u>{span_content}</u>"
+
+                        # Add the formatted span to the HTML content
+                        html_content += span_content
+
+                    if list_open:
+                        html_content += "</li>"  # Close the list item
+
+                html_content += "</div>"  # Close block div
+
+        # Ensure any open list is closed at the end of the page
+        if list_open:
+            html_content += f"</{current_list_type}>"
+            list_open = False
+
+    return html_content
+
+# def render_pdf_to_html(uploaded_file):
+#     import fitz  # PyMuPDF
+
+#     pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+#     html_content = ""
+
+#     for page_num in range(len(pdf_document)):
+#         page = pdf_document.load_page(page_num)
+#         blocks = page.get_text("dict")["blocks"]
+
+#         for block in blocks:
+#             if "lines" in block:
+#                 html_content += "<div style='margin-bottom:10px;'>"
+
+#                 for line in block["lines"]:
+#                     for span in line["spans"]:
+#                         span_content = span["text"]
+#                         font_name = span["font"]  # Get the font name
+
+#                         # Check if the font is bold by inspecting the font name
+#                         if "Bold" in font_name:
+#                             span_content = f"<b>{span_content}</b>"
+
+#                         # Check if the font is italic by inspecting the font name
+#                         if "Italic" in font_name or "Oblique" in font_name:
+#                             span_content = f"<i>{span_content}</i>"
+
+#                         # Check if the text is underlined using flags (underline is usually handled by flags)
+#                         if span["flags"] & 4:
+#                             span_content = f"<u>{span_content}</u>"
+
+#                         # Add the formatted span content
+#                         html_content += span_content
+
+#                 html_content += "</div>"
+
+#     return html_content
+
+
+# Function to generate a Markdown file content
+def generate_markdown_content(translated_text):
+    markdown_content = f"# Translated Content\n\n{translated_text}"
+    return markdown_content
+
+# Function to create a downloadable Markdown file
+def create_download_button(translated_text):
+    markdown_content = generate_markdown_content(translated_text)
+    markdown_bytes = markdown_content.encode('utf-8')
+    st.download_button(
+        label="Download Translated Content as Markdown",
+        data=markdown_bytes,
+        file_name="translated_content.md",
+        mime="text/markdown"
+    )
+    
+def display_pdf_as_images(uploaded_file):
+    if uploaded_file is not None:
+        pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        images = []
+        for page_num in range(len(pdf_document)):
+            page = pdf_document.load_page(page_num)
+            pix = page.get_pixmap()
+            img_data = pix.tobytes("png")
+            images.append(img_data)
+        
+        for img in images:
+            st.image(img)
+            
 # Main Client Logic
 def client_main():
-    # Apply old app's CSS
     st.sidebar.title("Settings")
     input_method = st.sidebar.radio(
         "Select input method",
@@ -540,10 +696,32 @@ def client_main():
         st.session_state.input_text = st.text_input("Enter the text you want to convert", st.session_state.input_text)
     elif input_method == "Upload a PDF or Text file":
         uploaded_file = st.sidebar.file_uploader("Upload a PDF or Text file", type=["pdf", "txt"])
+
         if uploaded_file is not None:
-            st.session_state.input_text = read_uploaded_file(uploaded_file)
-        if st.session_state.input_text:
-            st.text_area("Content from uploaded file", st.session_state.input_text, height=200)
+            view_method = st.sidebar.radio(
+                "View Content",
+                ("View PDF as Images", "View PDF in Non-Editable Editor", "Edit PDF Content in Editor"),
+                index=0  # Default is "Type your input manually"
+            )
+
+            if view_method == "View PDF as Images" and uploaded_file.type == "application/pdf":
+                display_pdf_as_images(uploaded_file)  # Display the PDF as images
+
+            if view_method == "View PDF in Non-Editable Editor" and uploaded_file.type == "application/pdf":
+                html_content = render_pdf_to_html(uploaded_file)
+                # Display the content in a read-only Quill editor
+                st_quill(value=html_content, readonly=True)
+
+            if view_method == "Edit PDF Content in Editor" and uploaded_file.type == "application/pdf":
+                html_content = render_pdf_to_html(uploaded_file)
+                # Display the text in Quill editor for editing
+                edited_text = st_quill(value=html_content)
+                create_html_download_button(html_content)
+                st.session_state.input_text = edited_text
+                # quill_editor(initial_content=html_content)
+
+            if st.session_state.input_text:
+                st.text_area("Content from uploaded file", st.session_state.input_text, height=200)
     elif input_method == "Add URL":
         url_input = st.text_input("Enter the URL to fetch and translate")
         if url_input:
@@ -556,9 +734,12 @@ def client_main():
             with st.spinner('Translation in progress...'):
                 st.session_state.output_message = get_groq_response(st.session_state.input_text, selected_language)
 
-    # Display the translated text once
+    # Display the translated text
     if st.session_state.output_message:
         st.markdown(f"<div class='translated-container'><h4>Translated Text:</h4><p>{st.session_state.output_message}</p></div>", unsafe_allow_html=True)
+        
+        # Provide download button for the translated content
+        create_download_button(st.session_state.output_message)
 
     col1, col2 = st.columns(2)
     
@@ -575,7 +756,6 @@ def client_main():
                 with st.spinner('Fetching response from Wikipedia...'):
                     context = get_wikipedia_context(st.session_state.input_text)
                     st.markdown(f"<div class='wiki-container'><h4>Wikipedia Context:</h4><p>{context}</p></div>", unsafe_allow_html=True)
-
 # Function to read content from uploaded file
 def read_uploaded_file(uploaded_file):
     if uploaded_file is not None:
@@ -651,3 +831,11 @@ def display_audio(audio_bytes):
     st.markdown(f'<audio controls src="data:audio/mp3;base64,{audio_base64}"></audio>', unsafe_allow_html=True)
 
 
+def create_html_download_button(html_content):
+    html_bytes = html_content.encode('utf-8')
+    st.download_button(
+        label="Download as HTML",
+        data=html_bytes,
+        file_name="content.html",
+        mime="text/html"
+    )

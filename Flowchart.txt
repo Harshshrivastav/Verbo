@@ -1,20 +1,19 @@
+
+
 >>>>>>>>>>
 Prerequisites
 >>>>>>>>>>
-Python
-Pip
-Streamlit
-Bash
-VSCode or PyCharm
-
+    Python
+    Streamlit
+    VSCode
+    langchain
+    langserve
+    gtts (Google text to speech)
 
 >>>>>>>
 API KEYS
 >>>>>>>
-Google Translate API Key
-GROQ API Key
-Pinecone API Key
-Store these keys securely in environment variables.
+    GROQ API Key
 
 >>>>>>>>>>>>>
 Development Flow
@@ -22,68 +21,78 @@ Development Flow
 >>>>>>
 Step 1: Environment Setup
 >>>>>>
-    Create Project Directory:
 
+    Create Project Directory:>>>
     Organize your project in a dedicated directory:
     mkdir 1-Project-TranslatorApp
     cd 1-Project-TranslatorApp
-    Set Up Virtual Environment:
 
+    Set Up Virtual Environment:>>>
     Create a new virtual environment using conda or venv:
-    conda create --name translatorapp python=3.10
-    conda activate translatorapp
-    Install Dependencies:
+    conda create venv -p python=3.12
+    conda activate ./venv
 
+    Install Dependencies:>>>
     Create a requirements.txt file and install the dependencies:
     pip install -r requirements.txt
-    Setup Environment Variables:
 
+    Setup Environment Variables:>>>
     Create an .env file to store API keys:
-    GROQ_API_KEY=your_groq_api_key_here
-    GOOGLE_TRANSLATE_API_KEY=your_google_translate_api_key_here
-    PINECONE_API_KEY=your_pinecone_api_key_here
+    GROQ_API_KEY = "******************abcxyz123"
+    
 
 >>>>>>
-Step 2: Build the Authentication System
+Step 2: (version-1) Build the Authentication System
 >>>>>>
-    Create Authentication Module:
+    Create Authentication Module(auth.py):
         Implement login and registration logic using streamlit-authenticator.
-    Integration:
+    Integration(with app.py):
         Ensure the authentication is integrated smoothly with other features.
-
+    Prerequisites:
+        sql commands (Create, Select, Insert, Delete)
+        streamlit-authenticator
+    
 >>>>>>
-Step 3: Develop the Markdown Translation Functionality
+Step 3: (Version-2) Develop the Markdown Translation Functionality
 >>>>>>
     Set Up the Main Application File (app.py):
 
     Create the main interface using Streamlit.
     Implement File Upload and Processing:
-
     Allow users to upload Markdown files for translation.
-    Translation Feature Development:
+    
+    Translation:
+    GROQ API 
 
-    Integrate Google Translate API for translating Markdown content.
-    GROQ API Integration:
-
-    Incorporate GROQ API for advanced translation and conversation features.
     UI Enhancements:
-
     Improve the user interface with Streamlit components.
-    Download Feature:
-
-    Allow users to download the translated Markdown file.
 
 >>>>>>
-Step 4: Implement Hybrid Search Functionality
+Step 4: (version-3,4) Implement Hybrid Options Functionality
 >>>>>>
-    Langchain Integration:
-    Add hybrid search functionality using Pinecone for vector embeddings and Langchain.
-    Develop Search Interface:
-    Build a search interface within the app to query content.
-
+    Integration:
+    FastApi 
+    PyPDF2
+    langserve
+    gtts
     
 >>>>>>>
 Step 5: Deployment
 >>>>>>>
+    Deploy the server:
+    Deploy the serve.py file on onrender
     Deploy to Streamlit:
     Push your code to a GitHub repository.
+
+
+>>>>>>>>>
+Step 6: Testing and Maintenance
+>>>>>>>>>
+    Test the application:
+    Test the application thoroughly to ensure it works as expected.
+    Fix bugs and improve performance:
+    Continuously monitor and improve the application to ensure it remains stable and efficient.
+
+
+Deployed Link ---->   https://verbo-app.streamlit.app/
+
